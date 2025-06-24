@@ -1,6 +1,6 @@
 """DataUpdateCoordinator for the NZ WITS integration."""
 import async_timeout
-from datetime import timedelta
+from datetime import timedelta, datetime # Added datetime
 import logging
 
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -52,6 +52,9 @@ class WitsDataUpdateCoordinator(DataUpdateCoordinator):
                     _LOGGER.warning("No price data received for node %s across all schedules.", self.node)
                     # Depending on desired behavior, you might raise UpdateFailed here
                     # or return the empty structure. For now, returning it.
+
+                # Add a timestamp for when the API call was successful
+                all_schedule_data["last_api_success_utc"] = datetime.utcnow()
 
                 return all_schedule_data
         except InvalidAuth as err:

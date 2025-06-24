@@ -71,7 +71,7 @@ class WitsPriceSensor(CoordinatorEntity[WitsDataUpdateCoordinator], SensorEntity
     
     # The API gives price per MWh, we want price per kWh
     _attr_native_unit_of_measurement = f"NZD/{UnitOfEnergy.KILO_WATT_HOUR}"
-    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_state_class = None # Monetary spot prices should have state_class None
 
     def __init__(
         self,
@@ -149,7 +149,11 @@ class WitsPriceSensor(CoordinatorEntity[WitsDataUpdateCoordinator], SensorEntity
             "schedule_name": SCHEDULE_TYPES[self._schedule_type]["name"], # Get human-readable name
             "trading_period": current_data_point.get("tradingPeriod"),
             "trading_datetime": current_data_point.get("tradingDateTime"),
-            "last_updated_from_coordinator": dt_util.as_localtz(self.coordinator.last_update).isoformat() if self.coordinator.last_update else None,
+            "last_updated_from_coordinator": (
+                dt_util.as_localtz(self.coordinator.data["last_api_success_utc"]).isoformat()
+                if self.coordinator.data and "last_api_success_utc" in self.coordinator.data and self.coordinator.data["last_api_success_utc"]
+                else None
+            ),
         }
         
         # For forecast schedules, add the full forecast list
