@@ -132,8 +132,11 @@ class WitsPriceSensor(CoordinatorEntity, SensorEntity):
             "schedule": current_data.get("schedule"),
             "trading_period": current_data.get("tradingPeriod"),
             "trading_datetime": current_data.get("tradingDateTime"),
-            "last_updated": self.coordinator.last_updated,
         }
+        
+        # Safely get the last update time to prevent crashes
+        if self.coordinator.last_update_success:
+             attributes["last_updated"] = dt_util.now()
         
         # For forecast schedules, add the full forecast as an attribute
         if self._schedule_type in [SCHEDULE_PRSS, SCHEDULE_PRSL]:
