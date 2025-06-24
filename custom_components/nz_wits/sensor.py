@@ -21,12 +21,23 @@ from homeassistant.helpers.update_coordinator import (
 from homeassistant.util import dt as dt_util
 
 from .api import WitsApiClient, CannotConnect, InvalidAuth
-from .const import DOMAIN, SCHEDULE_RTD, SCHEDULE_INTERIM, SCHEDULE_PRSS, SCHEDULE_PRSL, SCHEDULE_TYPES
+from .const import (
+    DOMAIN,
+    SCHEDULE_RTD,
+    SCHEDULE_INTERIM,
+    SCHEDULE_PRSS,
+    SCHEDULE_PRSL,
+    SCHEDULE_TYPES,
+    CONF_UPDATE_RTD,
+    CONF_UPDATE_INTERIM,
+    CONF_UPDATE_PRSS,
+    CONF_UPDATE_PRSL,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
-# Define update intervals for each schedule type
-SCAN_INTERVALS = {
+# Define base update intervals for each schedule type
+BASE_SCAN_INTERVALS = {
     SCHEDULE_RTD: timedelta(minutes=1),
     SCHEDULE_INTERIM: timedelta(minutes=5),
     SCHEDULE_PRSS: timedelta(minutes=60),
@@ -42,15 +53,27 @@ async def async_setup_entry(
     """Set up the sensor platform."""
     api_client: WitsApiClient = hass.data[DOMAIN][entry.entry_id]
 
+    update_options = {
+        SCHEDULE_RTD: entry.options.get(CONF_UPDATE_RTD, True),
+        SCHEDULE_INTERIM: entry.options.get(CONF_UPDATE_INTERIM, True),
+        SCHEDULE_PRSS: entry.options.get(CONF_UPDATE_PRSS, True),
+        SCHEDULE_PRSL: entry.options.get(CONF_UPDATE_PRSL, True),
+    }
+
     entities = []
     # Create a coordinator and sensor for each schedule type
     for schedule_type, details in SCHEDULE_TYPES.items():
+        # Set update interval to None if automatic updates are disabled for this sensor
+        update_interval = (
+            BASE_SCAN_INTERVALS[schedule_type] if update_options[schedule_type] else None
+        )
+
         coordinator = DataUpdateCoordinator(
             hass,
             _LOGGER,
             name=f"{DOMAIN}_{schedule_type}",
             update_method=lambda st=schedule_type: api_client.get_price_data(st),
-            update_interval=SCAN_INTERVALS[schedule_type],
+            update_interval=update_interval,
         )
         # Fetch initial data
         await coordinator.async_config_entry_first_refresh()
@@ -67,9 +90,6 @@ class WitsPriceSensor(CoordinatorEntity, SensorEntity):
 
     _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.MONETARY
-    # The 'state_class' is intentionally omitted here.
-    # For 'monetary' device_class, 'state_class' should not be 'measurement'.
-    # Home Assistant will handle it correctly without it being explicitly set.
     
     # The API gives price per MWh, we want price per kWh
     _attr_native_unit_of_measurement = f"NZD/{UnitOfEnergy.KILO_WATT_HOUR}"
@@ -110,12 +130,10 @@ class WitsPriceSensor(CoordinatorEntity, SensorEntity):
         if not self.coordinator.data:
             return None
         
-        # The first price in the list is the current/next price
         price_mwh = self.coordinator.data[0].get("price")
         if price_mwh is None:
             return None
         
-        # Convert price from $/MWh to $/kWh
         return round(float(price_mwh) / 1000, 5)
 
     @property
@@ -124,7 +142,6 @@ class WitsPriceSensor(CoordinatorEntity, SensorEntity):
         if not self.coordinator.data:
             return None
             
-        # The first item is the primary data point
         current_data = self.coordinator.data[0]
         
         attributes = {
@@ -134,11 +151,9 @@ class WitsPriceSensor(CoordinatorEntity, SensorEntity):
             "trading_datetime": current_data.get("tradingDateTime"),
         }
         
-        # Safely get the last update time to prevent crashes
         if self.coordinator.last_update_success:
              attributes["last_updated"] = dt_util.now()
         
-        # For forecast schedules, add the full forecast as an attribute
         if self._schedule_type in [SCHEDULE_PRSS, SCHEDULE_PRSL]:
             attributes["forecast"] = self.coordinator.data
             
