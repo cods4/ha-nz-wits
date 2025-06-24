@@ -67,7 +67,10 @@ class WitsPriceSensor(CoordinatorEntity, SensorEntity):
 
     _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.MONETARY
-    _attr_state_class = SensorStateClass.MEASUREMENT
+    # The 'state_class' is intentionally omitted here.
+    # For 'monetary' device_class, 'state_class' should not be 'measurement'.
+    # Home Assistant will handle it correctly without it being explicitly set.
+    
     # The API gives price per MWh, we want price per kWh
     _attr_native_unit_of_measurement = f"NZD/{UnitOfEnergy.KILO_WATT_HOUR}"
 
@@ -129,7 +132,7 @@ class WitsPriceSensor(CoordinatorEntity, SensorEntity):
             "schedule": current_data.get("schedule"),
             "trading_period": current_data.get("tradingPeriod"),
             "trading_datetime": current_data.get("tradingDateTime"),
-            "last_updated": self.coordinator.last_updated,
+            "last_updated": self.coordinator.last_update_success_time,
         }
         
         # For forecast schedules, add the full forecast as an attribute
