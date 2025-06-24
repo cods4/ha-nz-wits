@@ -213,27 +213,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             }
         )
 
-        # Prepare description placeholders
-        # Using simple strings now as markdown from translation files is tricky for placeholders
-        description = (
-            "You can edit your API credentials and node here. "
-            "Changes to credentials or node will be validated upon submission.\n\n"
-            "Additionally, you can disable automatic updates for each price sensor. "
-            "This allows you to use automations to trigger updates (e.g., via the "
-            "'homeassistant.update_entity' service) at your preferred frequency.\n"
-            "Default auto-update intervals if enabled:\n"
-            "- Real Time Dispatch (RTD): Every minute.\n"
-            "- Interim Price: Every 5 minutes.\n"
-            "- Price Responsive Schedule Short (PRSS): Every 30 minutes.\n"
-            "- Price Responsive Schedule Long (PRSL): Every 30 minutes."
-        )
-
+        # The description will now be automatically pulled from the translations
+        # using the key "options.step.init.description".
+        # Field labels will be pulled from "options.step.init.data.<field_name>".
+        # The title will be pulled from "options.step.init.title".
         return self.async_show_form(
             step_id="init",
             data_schema=options_schema,
-            description_placeholders={"description": description}, # Pass the full string
-            errors=errors,
-            # The actual text will be shown via the translation file using the key "config.options.step.init.description"
-            # For now, this placeholder helps illustrate where the text should go.
-            # In a real scenario, you'd update strings.json or relevant translation files.
+            errors=errors
+            # No need for description_placeholders if the description is static
+            # and fully defined in the translation file.
         )

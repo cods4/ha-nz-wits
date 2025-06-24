@@ -1,0 +1,69 @@
+{
+    "config": {
+        "title": "NZ WITS Spot Price",
+        "step": {
+            "user": {
+                "title": "WITS API Credentials",
+                "description": "Please enter your WITS API Client ID, Client Secret, and the Node (GXP) you want to monitor.",
+                "data": {
+                    "client_id": "Client ID",
+                    "client_secret": "Client Secret",
+                    "node": "Node (e.g., TGA0331)"
+                }
+            },
+            "reauth_confirm": {
+                "title": "Re-authenticate WITS API",
+                "description": "Your credentials for WITS API need to be updated. Please enter them below.",
+                "data": {
+                    "client_id": "Client ID",
+                    "client_secret": "Client Secret",
+                    "node": "Node (e.g., TGA0331)"
+                }
+            }
+        },
+        "options": {
+            "step": {
+                "init": {
+                    "title": "NZ WITS Spot Price Options",
+                    "description": "You can edit your API credentials and node here. Changes to credentials or node will be validated upon submission.\n\nAdditionally, you can disable automatic updates for each price sensor. This allows you to use automations to trigger updates (e.g., via the 'homeassistant.update_entity' service) at your preferred frequency.\nDefault auto-update intervals if enabled:\n- Real Time Dispatch (RTD): Every minute.\n- Interim Price: Every 5 minutes.\n- Price Responsive Schedule Short (PRSS): Every 30 minutes.\n- Price Responsive Schedule Long (PRSL): Every 30 minutes.",
+                    "data": {
+                        "client_id": "Client ID (leave unchanged if not modifying)",
+                        "client_secret": "Client Secret (enter new secret to change, otherwise leave as is - it will not be displayed)",
+                        "node": "Node (e.g., TGA0331, leave unchanged if not modifying)",
+                        "update_rtd": "Enable auto-update for Real Time Dispatch (RTD) sensor",
+                        "update_interim": "Enable auto-update for Interim Price sensor",
+                        "update_prss": "Enable auto-update for Price Responsive Schedule Short (PRSS) sensor",
+                        "update_prsl": "Enable auto-update for Price Responsive Schedule Long (PRSL) sensor"
+                    }
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Failed to connect to the WITS API. Check your internet connection and API endpoint.",
+            "invalid_auth": "Invalid WITS API credentials. Check your Client ID and Client Secret.",
+            "unknown": "An unknown error occurred.",
+            "already_configured": "This WITS Node is already configured."
+        },
+        "abort": {
+            "already_configured": "This WITS Node is already configured.",
+            "reauth_successful": "Re-authentication successful. Your WITS API credentials have been updated."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "NZ WITS Spot Price Options",
+                "description": "You can edit your API credentials and node here. Changes to credentials or node will be validated upon submission.\n\nAdditionally, you can disable automatic updates for each price sensor. This allows you to use automations to trigger updates (e.g., via the 'homeassistant.update_entity' service) at your preferred frequency.\nDefault auto-update intervals if enabled:\n- Real Time Dispatch (RTD): Every minute.\n- Interim Price: Every 5 minutes.\n- Price Responsive Schedule Short (PRSS): Every 30 minutes.\n- Price Responsive Schedule Long (PRSL): Every 30 minutes.",
+                 "data": {
+                    "client_id": "Client ID",
+                    "client_secret": "Client Secret (will not be shown, enter to change)",
+                    "node": "Node",
+                    "update_rtd": "Auto-update RTD sensor",
+                    "update_interim": "Auto-update Interim sensor",
+                    "update_prss": "Auto-update PRSS sensor",
+                    "update_prsl": "Auto-update PRSL sensor"
+                }
+            }
+        }
+    }
+}
