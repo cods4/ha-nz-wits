@@ -7,7 +7,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -34,6 +34,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
     }
 )
 
+
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
     """Validate the user input allows us to connect."""
     client = WitsApiClient(data, async_get_clientsession(hass))
@@ -46,13 +47,51 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    @staticmethod
-    @callback
-    def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry,
-    ) -> OptionsFlowHandler:
-        """Get the options flow for this handler."""
-        return OptionsFlowHandler(config_entry)
+    async def async_step_reauth(self, entry_data: dict[str, Any]) -> FlowResult:
+        """Handle configuration by re-authentication."""
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Dialog to confirm re-authentication."""
+        errors: dict[str, str] = {}
+        
+        # Get the existing entry to pre-populate the form
+        entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
+        
+        if user_input is not None and entry:
+            try:
+                # Validate the new credentials
+                await validate_input(self.hass, user_input)
+            except CannotConnect:
+                errors["base"] = "cannot_connect"
+            except InvalidAuth:
+                errors["base"] = "invalid_auth"
+            except Exception:
+                _LOGGER.exception("Unexpected exception during re-authentication")
+                errors["base"] = "unknown"
+            else:
+                # Update the config entry with the new data and reload it
+                self.hass.config_entries.async_update_entry(entry, data=user_input)
+                await self.hass.config_entries.async_reload(entry.entry_id)
+                return self.async_abort(reason="reauth_successful")
+
+        # Pre-fill the form with existing data
+        if entry:
+            prefill_schema = vol.Schema(
+                {
+                    vol.Required(CONF_CLIENT_ID, default=entry.data.get(CONF_CLIENT_ID)): str,
+                    vol.Required(CONF_CLIENT_SECRET, default=""): str, # Don't pre-fill secret
+                    vol.Optional(CONF_NODE, default=entry.data.get(CONF_NODE, DEFAULT_NODE)): str,
+                }
+            )
+
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=prefill_schema,
+            errors=errors,
+        )
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -94,8 +133,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        # Note: If a sensor is disabled, it can be updated on a custom schedule
-        # by calling the 'homeassistant.update_entity' service in an automation.
         options_schema = vol.Schema(
             {
                 vol.Required(
