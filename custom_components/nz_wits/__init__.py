@@ -6,8 +6,10 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import WitsApiClient
+from .api import WitsApiClient, CannotConnect, InvalidAuth
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -18,9 +20,16 @@ PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up NZ WITS Spot Price from a config entry."""
-    # Create an API client instance for the integration
-    api_client = WitsApiClient(entry.data)
-    
+    # Get the shared aiohttp session and create an API client instance.
+    session = async_get_clientsession(hass)
+    api_client = WitsApiClient(entry.data, session)
+
+    # Test the API connection. If it fails, Home Assistant will retry later.
+    try:
+        await api_client.test_authentication()
+    except (CannotConnect, InvalidAuth) as err:
+        raise ConfigEntryNotReady(f"Failed to connect to WITS API: {err}") from err
+
     # Store the API client in the hass.data dictionary to be accessed by platforms
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = api_client
 
