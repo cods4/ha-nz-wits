@@ -7,7 +7,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -47,6 +47,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> "OptionsFlowHandler":
+        """Get the options flow for this handler."""
+        return OptionsFlowHandler(config_entry)
+
     async def async_step_reauth(self, entry_data: dict[str, Any]) -> FlowResult:
         """Handle configuration by re-authentication."""
         return await self.async_step_reauth_confirm()
@@ -57,13 +65,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Dialog to confirm re-authentication."""
         errors: dict[str, str] = {}
         
-        # Get the existing entry to pre-populate the form
         entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
         
         if user_input is not None and entry:
             try:
-                # Validate the new credentials
-                await validate_input(self.hass, user_input)
+                # Combine existing data with user input
+                updated_data = entry.data.copy()
+                updated_data.update(user_input)
+                await validate_input(self.hass, updated_data)
             except CannotConnect:
                 errors["base"] = "cannot_connect"
             except InvalidAuth:
@@ -72,20 +81,17 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception during re-authentication")
                 errors["base"] = "unknown"
             else:
-                # Update the config entry with the new data and reload it
-                self.hass.config_entries.async_update_entry(entry, data=user_input)
+                self.hass.config_entries.async_update_entry(entry, data=updated_data)
                 await self.hass.config_entries.async_reload(entry.entry_id)
                 return self.async_abort(reason="reauth_successful")
 
-        # Pre-fill the form with existing data
-        if entry:
-            prefill_schema = vol.Schema(
-                {
-                    vol.Required(CONF_CLIENT_ID, default=entry.data.get(CONF_CLIENT_ID)): str,
-                    vol.Required(CONF_CLIENT_SECRET, default=""): str, # Don't pre-fill secret
-                    vol.Optional(CONF_NODE, default=entry.data.get(CONF_NODE, DEFAULT_NODE)): str,
-                }
-            )
+        prefill_schema = vol.Schema(
+            {
+                vol.Required(CONF_CLIENT_ID, default=entry.data.get(CONF_CLIENT_ID) if entry else ""): str,
+                vol.Required(CONF_CLIENT_SECRET, default=""): str,
+                vol.Optional(CONF_NODE, default=entry.data.get(CONF_NODE, DEFAULT_NODE) if entry else DEFAULT_NODE): str,
+            }
+        )
 
         return self.async_show_form(
             step_id="reauth_confirm",
