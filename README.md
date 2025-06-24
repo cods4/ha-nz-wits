@@ -33,10 +33,11 @@ Before you can configure this integration, you need to obtain API credentials fr
 4.  **Record Your Credentials:**
     *   Note down your **Client ID** and **Client Secret**. You will need these when configuring the integration in Home Assistant.
 5.  **Find Your Connection Node:**
-    *   You can look up your address to find your connection node (Grid Exit Point - GXP) here: [https://www.ea.govt.nz/your-power/your-meter/address/](https://www.ea.govt.nz/your-power/your-meter/address/)
-    *   Your node is typically a 7-character string, for example, `TGA0331`.
+    *   You can look up your address to find your point of connection to the grid (POC) here: [https://www.ea.govt.nz/your-power/your-meter/address/](https://www.ea.govt.nz/your-power/your-meter/address/)
+    *   Select your ICP, then click on 'Show all connection information', and find your POC.
+    *   Your POC/node is typically a 7-character string, for example, `TGA0331`.
 
-With your Client ID, Client Secret, and Node identifier ready, you can proceed with the installation and configuration of the integration.
+With your Client ID, Client Secret, and POC/Node identifier ready, you can proceed with the installation and configuration of the integration.
 
 ## Installation
 ### Recommended Method: HACS
