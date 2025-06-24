@@ -150,7 +150,7 @@ class WitsPriceSensor(CoordinatorEntity[WitsDataUpdateCoordinator], SensorEntity
             "trading_period": current_data_point.get("tradingPeriod"),
             "trading_datetime": current_data_point.get("tradingDateTime"),
             "last_updated_from_coordinator": (
-                dt_util.as_localtz(self.coordinator.data["last_api_success_utc"]).isoformat()
+                dt_util.as_local(self.coordinator.data["last_api_success_utc"]).isoformat()
                 if self.coordinator.data and "last_api_success_utc" in self.coordinator.data and self.coordinator.data["last_api_success_utc"]
                 else None
             ),
