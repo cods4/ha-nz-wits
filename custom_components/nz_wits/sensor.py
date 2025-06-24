@@ -132,7 +132,7 @@ class WitsPriceSensor(CoordinatorEntity, SensorEntity):
             "schedule": current_data.get("schedule"),
             "trading_period": current_data.get("tradingPeriod"),
             "trading_datetime": current_data.get("tradingDateTime"),
-            "last_updated": self.coordinator.last_update_success_time,
+            "last_updated": self.coordinator.last_updated,
         }
         
         # For forecast schedules, add the full forecast as an attribute
