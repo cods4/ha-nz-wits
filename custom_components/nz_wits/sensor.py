@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -18,6 +18,7 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
 )
+from homeassistant.util import dt as dt_util
 
 from .api import WitsApiClient, CannotConnect, InvalidAuth
 from .const import DOMAIN, SCHEDULE_RTD, SCHEDULE_INTERIM, SCHEDULE_PRSS, SCHEDULE_PRSL, SCHEDULE_TYPES
@@ -128,7 +129,7 @@ class WitsPriceSensor(CoordinatorEntity, SensorEntity):
             "schedule": current_data.get("schedule"),
             "trading_period": current_data.get("tradingPeriod"),
             "trading_datetime": current_data.get("tradingDateTime"),
-            "last_updated": self.coordinator.last_update_success_time,
+            "last_updated": self.coordinator.last_updated,
         }
         
         # For forecast schedules, add the full forecast as an attribute
