@@ -136,11 +136,64 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Manage the options."""
-        if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+        errors: dict[str, str] = {}
 
+        if user_input is not None:
+            # Prepare updated data for validation if credentials/node changed
+            updated_core_data = self.config_entry.data.copy()
+            core_data_changed = False
+
+            if user_input.get(CONF_CLIENT_ID) != self.config_entry.data.get(CONF_CLIENT_ID) or \
+               user_input.get(CONF_CLIENT_SECRET) != self.config_entry.data.get(CONF_CLIENT_SECRET) or \
+               user_input.get(CONF_NODE) != self.config_entry.data.get(CONF_NODE):
+                core_data_changed = True
+                updated_core_data[CONF_CLIENT_ID] = user_input[CONF_CLIENT_ID]
+                updated_core_data[CONF_CLIENT_SECRET] = user_input[CONF_CLIENT_SECRET]
+                updated_core_data[CONF_NODE] = user_input[CONF_NODE]
+
+            if core_data_changed:
+                try:
+                    _LOGGER.debug("WITS Options: Core data changed, validating new credentials/node.")
+                    await validate_input(self.hass, updated_core_data)
+                    # If validation passes, update the main config entry data
+                    self.hass.config_entries.async_update_entry(
+                        self.config_entry, data=updated_core_data
+                    )
+                    _LOGGER.debug("WITS Options: Core data updated successfully.")
+                except CannotConnect:
+                    _LOGGER.error("WITS Options: Cannot connect with new credentials/node.")
+                    errors["base"] = "cannot_connect"
+                except InvalidAuth:
+                    _LOGGER.error("WITS Options: Invalid authentication with new credentials/node.")
+                    errors["base"] = "invalid_auth"
+                except Exception:
+                    _LOGGER.exception("WITS Options: Unexpected exception during credential/node validation.")
+                    errors["base"] = "unknown"
+
+            if not errors:
+                # Create/update the options entry with the update toggles
+                # Exclude core config from options dict
+                options_data = {
+                    k: v for k, v in user_input.items()
+                    if k not in [CONF_CLIENT_ID, CONF_CLIENT_SECRET, CONF_NODE]
+                }
+                return self.async_create_entry(title="", data=options_data)
+
+        # Schema for the options form
         options_schema = vol.Schema(
             {
+                vol.Required(
+                    CONF_CLIENT_ID,
+                    default=self.config_entry.data.get(CONF_CLIENT_ID),
+                ): str,
+                vol.Required(
+                    CONF_CLIENT_SECRET,
+                    default=self.config_entry.data.get(CONF_CLIENT_SECRET),
+                ): str,
+                vol.Optional(
+                    CONF_NODE,
+                    default=self.config_entry.data.get(CONF_NODE, DEFAULT_NODE),
+                ): str,
                 vol.Required(
                     CONF_UPDATE_RTD,
                     default=self.config_entry.options.get(CONF_UPDATE_RTD, True),
@@ -160,13 +213,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             }
         )
 
+        # The description will now be automatically pulled from the translations
+        # using the key "options.step.init.description".
+        # Field labels will be pulled from "options.step.init.data.<field_name>".
+        # The title will be pulled from "options.step.init.title".
         return self.async_show_form(
             step_id="init",
             data_schema=options_schema,
-            description_placeholders={
-                "rtd_sensor": "Real Time Dispatch (RTD)",
-                "interim_sensor": "Interim Price",
-                "prss_sensor": "Price Responsive Schedule Short (PRSS)",
-                "prsl_sensor": "Price Responsive Schedule Long (PRSL)",
-            },
+            errors=errors
+            # No need for description_placeholders if the description is static
+            # and fully defined in the translation file.
         )

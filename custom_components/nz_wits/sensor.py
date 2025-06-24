@@ -40,8 +40,8 @@ _LOGGER = logging.getLogger(__name__)
 BASE_SCAN_INTERVALS = {
     SCHEDULE_RTD: timedelta(minutes=1),
     SCHEDULE_INTERIM: timedelta(minutes=5),
-    SCHEDULE_PRSS: timedelta(minutes=60),
-    SCHEDULE_PRSL: timedelta(minutes=60),
+    SCHEDULE_PRSS: timedelta(minutes=30),
+    SCHEDULE_PRSL: timedelta(minutes=30),
 }
 
 
