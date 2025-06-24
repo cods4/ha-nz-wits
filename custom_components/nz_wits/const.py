@@ -12,6 +12,13 @@ CONF_CLIENT_ID = "client_id"
 CONF_CLIENT_SECRET = "client_secret"
 CONF_NODE = "node"
 
+# Options keys for update toggles
+CONF_UPDATE_RTD = "update_rtd"
+CONF_UPDATE_INTERIM = "update_interim"
+CONF_UPDATE_PRSS = "update_prss"
+CONF_UPDATE_PRSL = "update_prsl"
+
+
 # Default values
 DEFAULT_NODE = "TGA0331"
 
