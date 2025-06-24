@@ -68,10 +68,11 @@ class WitsPriceSensor(CoordinatorEntity[WitsDataUpdateCoordinator], SensorEntity
 
     _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.MONETARY
+    _attr_suggested_display_precision = None
+    _attr_state_class = SensorStateClass.TOTAL
     
     # The API gives price per MWh, we want price per kWh
     _attr_native_unit_of_measurement = f"NZD/{UnitOfEnergy.KILO_WATT_HOUR}"
-    _attr_state_class = None # Monetary spot prices should have state_class None
 
     def __init__(
         self,
